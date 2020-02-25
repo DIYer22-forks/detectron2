@@ -111,7 +111,7 @@ def default_setup(cfg, args):
             )
         )
 
-    logger.info("Running with full config:\n{}".format(cfg))
+    #logger.info("Running with full config:\n{}".format(cfg))
     if comm.is_main_process() and output_dir:
         # Note: some of our scripts may expect the existence of
         # config.yaml in output directory
@@ -396,7 +396,7 @@ class DefaultTrainer(SimpleTrainer):
         """
         model = build_model(cfg)
         logger = logging.getLogger(__name__)
-        logger.info("Model:\n{}".format(model))
+        #logger.info("Model:\n{}".format(model))
         return model
 
     @classmethod
