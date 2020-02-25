@@ -14,6 +14,10 @@ Therefore, we recommend you to use detectron2 as an library and take
 this file as an example of how to use the library.
 You may want to write your own script with your datasets and other customizations.
 """
+import boxx
+from boxx import *
+
+
 
 import logging
 import os
@@ -121,9 +125,42 @@ def setup(args):
     default_setup(cfg, args)
     return cfg
 
+def register_asis():
+    from detectron2.data import DatasetCatalog, MetadataCatalog
+    from detectron2.data.datasets import load_coco_json
+    
+    from functools import wraps
+
+    @wraps(load_coco_json)
+    def load_asis(*l, **kv):
+        dataset_dicts = load_coco_json(*l, **kv)
+        [[ann.update(category_id=0) for ann in d["annotations"]] for d in dataset_dicts]
+        return dataset_dicts
+    data_root= "/data/ws/blender_syn"
+    dirs = []
+    for dataset_type in listdir(data_root):
+        dir = (pathjoin(data_root, dataset_type, 'dataset_ln'))
+        if isdir(dir):
+            for d in ["train", "val"]:
+                img_dir = pathjoin(dir, d, 'image')
+                jsp = pathjoin(dir, d, 'coco_format_instances_2017.json')
+                dataset_name = f"{dataset_type}_{d}"
+                if dataset_name not in MetadataCatalog._NAME_TO_META:
+                    from detectron2.data.datasets import register_coco_instances
+                    register_coco_instances(dataset_name, {}, jsp, img_dir)
+                if 0:
+                    DatasetCatalog.register(dataset_name, lambda json_file=jsp, image_root=img_dir:load_asis(json_file=json_file, image_root=image_root))
+                    MetadataCatalog.get(dataset_name).set(
+                        json_file=jsp,
+                        image_root=img_dir,
+                        thing_classes=[dataset_type, ],
+                        evaluator_type = 'coco',
+                        #thing_dataset_id_to_contiguous_id={1:0}
+                        )
 
 def main(args):
     cfg = setup(args)
+    register_asis()
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
